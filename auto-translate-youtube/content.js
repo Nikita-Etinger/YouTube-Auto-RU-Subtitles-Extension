@@ -1,45 +1,52 @@
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "enableRu") {
-    enableRussianSubtitles();
-  }
-});
+let lastVideoUrl = null;
+
+function wait(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
 
 async function enableRussianSubtitles() {
 
-  const wait = (ms) => new Promise(r => setTimeout(r, ms));
-
-  // 1️⃣ Включить субтитры
   const ccButton = document.querySelector('.ytp-subtitles-button');
   if (ccButton && ccButton.getAttribute("aria-pressed") === "false") {
     ccButton.click();
-    await wait(600);
+    await wait(500);
   }
 
-  // 2️⃣ Открыть настройки
   document.querySelector('.ytp-settings-button')?.click();
-  await wait(600);
+  await wait(500);
 
-  // 3️⃣ Открыть "Субтитры"
-  const menuItems = [...document.querySelectorAll('.ytp-menuitem')];
-  const subtitlesItem = menuItems.find(el =>
-    el.innerText.includes("Субтитры")
-  );
+  const subtitlesItem = [...document.querySelectorAll('.ytp-menuitem')]
+    .find(el => el.innerText.includes("Субтитры"));
 
   if (!subtitlesItem) return;
   subtitlesItem.click();
-  await wait(600);
+  await wait(500);
 
-  // 4️⃣ Нажать "Перевести"
   const translateItem = [...document.querySelectorAll('.ytp-menuitem')]
     .find(el => el.innerText.includes("Перевести"));
 
   if (!translateItem) return;
   translateItem.click();
-  await wait(600);
+  await wait(500);
 
-  // 5️⃣ Выбрать "Русский"
   const russianItem = [...document.querySelectorAll('.ytp-menuitem')]
     .find(el => el.innerText.trim() === "Русский");
 
   if (russianItem) russianItem.click();
 }
+
+// 🔎 Отслеживание смены видео (SPA)
+function checkForVideoChange() {
+  const currentUrl = window.location.href;
+
+  if (currentUrl.includes("watch") && currentUrl !== lastVideoUrl) {
+    lastVideoUrl = currentUrl;
+
+    setTimeout(() => {
+      enableRussianSubtitles();
+    }, 2000); // даём плееру полностью загрузиться
+  }
+}
+
+// Проверка каждые 1.5 сек
+setInterval(checkForVideoChange, 1500);
